@@ -107,6 +107,30 @@ function diagnostic(){
   };
 }
 
+function stepToward(from,to){
+  const fr=Math.floor(from/SIZE),fc=from%SIZE;
+  const tr=Math.floor(to/SIZE),tc=to%SIZE;
+  if(fr<tr) return from+SIZE;
+  if(fr>tr) return from-SIZE;
+  if(fc<tc) return from+1;
+  if(fc>tc) return from-1;
+  return from;
+}
+
+function moveInto(index){
+  if(!Number.isInteger(index)||index<0||index>=state.map.length) return false;
+  state.playerIndex=index;
+  const tile=state.map[index];
+  if(!tile.visited){
+    tile.visited=true;
+    state.explored.add(index);
+    revealAround(index);
+    resolveTile(tile);
+  }
+  renderAll();
+  return true;
+}
+
 function recoverStall(){
   if(!state.running||state.combat||!Array.isArray(state.map)) return false;
   let changed=false;
@@ -191,7 +215,13 @@ moveOne=function(){
     const current=state.map[state.playerIndex];
     if(current&&!current.cleared&&!current.visited){
       const lockedCore=isCoreBoss(current)&&!state.meta.guardDefeated;
-      if(!lockedCore){
+      if(lockedCore){
+        ensureRequiredGuard();
+        const guard=state.map.find(t=>t&&(t.type==='bossGuard'||t.guard)&&!t.cleared);
+        if(guard&&guard.index!==state.playerIndex){
+          return moveInto(stepToward(state.playerIndex,guard.index));
+        }
+      }else{
         current.visited=true;
         state.explored.add(current.index);
         revealAround(current.index);
