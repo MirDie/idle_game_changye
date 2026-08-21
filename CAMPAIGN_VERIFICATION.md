@@ -1,7 +1,7 @@
 # Campaign Stability Verification
 
 - Result: **failure**
-- Verified commit: `526a93346624fad2dae8f9675030b0ed094d597a`
+- Verified commit: `375ea5c55eb539c37fe16c650cae4488242eabea`
 - Checks: syntax, 8-zone/80-floor final boss simulation, exact mid-floor save/load, offline single settlement, required-boss retry safety.
 
 ## Test output
@@ -11,14 +11,14 @@ node:assert:150
   throw new AssertionError(obj);
   ^
 
-AssertionError [ERR_ASSERTION]: campaign simulation timed out at floor 4, zone 0
+AssertionError [ERR_ASSERTION]: campaign simulation timed out at floor 6, zone 0
 + actual - expected
 
 + true
 - undefined
 
-    at campaignCompletesAllEightZones (/home/runner/work/idle_game_changye/idle_game_changye/tests/campaign-e2e.test.js:144:10)
-    at Object.<anonymous> (/home/runner/work/idle_game_changye/idle_game_changye/tests/campaign-e2e.test.js:151:3)
+    at campaignCompletesAllEightZones (/home/runner/work/idle_game_changye/idle_game_changye/tests/campaign-e2e.test.js:145:10)
+    at Object.<anonymous> (/home/runner/work/idle_game_changye/idle_game_changye/tests/campaign-e2e.test.js:152:3)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
