@@ -18,41 +18,43 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Syntax check
+      - name: Verify and record
+        shell: bash
         run: |
-          node --check full-content.js
-          node --check game-1.js
-          node --check content-bridge.js
-          node --check game-2.js
-          node --check game-3.js
-          node --check full-systems.js
-          node --check advanced-gameplay.js
-          node --check hotfixes.js
-          node --check campaign-stability.js
-      - name: Simulate complete campaign
-        run: node tests/campaign-e2e.test.js
-
-  record-result:
-    if: always() && github.event_name == 'push'
-    needs: campaign-e2e
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - name: Record result
-        env:
-          RESULT: ${{ needs.campaign-e2e.result }}
-          VERIFIED_SHA: ${{ github.sha }}
-        run: |
-          printf '# Campaign Stability Verification\n\n- Result: **%s**\n- Verified commit: `%s`\n- Checks: syntax, 8-zone/80-floor final boss simulation, exact mid-floor save/load, offline single settlement, required-boss retry safety.\n' "$RESULT" "$VERIFIED_SHA" > CAMPAIGN_VERIFICATION.md
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add CAMPAIGN_VERIFICATION.md
-          if ! git diff --cached --quiet; then
-            git commit -m 'ci: record campaign stability result [skip ci]'
-            git push origin HEAD:main
+          set +e
+          : > campaign-test.log
+          code=0
+          for file in full-content.js game-1.js content-bridge.js game-2.js game-3.js full-systems.js advanced-gameplay.js hotfixes.js campaign-stability.js; do
+            node --check "$file" >> campaign-test.log 2>&1 || code=1
+          done
+          if [ "$code" -eq 0 ]; then
+            node tests/campaign-e2e.test.js >> campaign-test.log 2>&1
+            code=$?
           fi
+
+          if [ "$code" -eq 0 ]; then result=success; else result=failure; fi
+          {
+            printf '# Campaign Stability Verification\n\n'
+            printf -- '- Result: **%s**\n' "$result"
+            printf -- '- Verified commit: `%s`\n' "${GITHUB_SHA}"
+            printf -- '- Checks: syntax, 8-zone/80-floor final boss simulation, exact mid-floor save/load, offline single settlement, required-boss retry safety.\n\n'
+            printf '## Test output\n\n```text\n'
+            tail -n 160 campaign-test.log
+            printf '\n```\n'
+          } > CAMPAIGN_VERIFICATION.md
+
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add CAMPAIGN_VERIFICATION.md
+            if ! git diff --cached --quiet; then
+              git commit -m 'ci: record campaign stability result [skip ci]'
+              git push origin HEAD:main
+            fi
+          fi
+          exit "$code"
