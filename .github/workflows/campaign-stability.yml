@@ -5,6 +5,13 @@ on:
     branches: [ main ]
   pull_request:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: campaign-stability-main
+  cancel-in-progress: true
+
 jobs:
   campaign-e2e:
     runs-on: ubuntu-latest
@@ -27,3 +34,25 @@ jobs:
           node --check campaign-stability.js
       - name: Simulate complete campaign
         run: node tests/campaign-e2e.test.js
+
+  record-result:
+    if: always() && github.event_name == 'push'
+    needs: campaign-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Record result
+        env:
+          RESULT: ${{ needs.campaign-e2e.result }}
+          VERIFIED_SHA: ${{ github.sha }}
+        run: |
+          printf '# Campaign Stability Verification\n\n- Result: **%s**\n- Verified commit: `%s`\n- Checks: syntax, 8-zone/80-floor final boss simulation, exact mid-floor save/load, offline single settlement, required-boss retry safety.\n' "$RESULT" "$VERIFIED_SHA" > CAMPAIGN_VERIFICATION.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add CAMPAIGN_VERIFICATION.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'ci: record campaign stability result [skip ci]'
+            git push origin HEAD:main
+          fi
