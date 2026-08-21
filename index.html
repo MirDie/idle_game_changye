@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#11131a" />
+  <title>幻境远征 · Grid Expedition</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="hero-badge">
+        <div class="hero-icon" id="heroIcon">⚔</div>
+        <div>
+          <div class="hero-line"><strong id="heroLevel">Lv.1</strong><span id="heroPower">战力 12</span></div>
+          <div class="bar hp"><i id="heroHpFill"></i><span id="heroHpText">100 / 100</span></div>
+        </div>
+      </div>
+      <div class="currency">
+        <span>◈ <b id="gold">0</b></span>
+        <span>✦ <b id="essence">0</b></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="floor-head panel">
+        <div>
+          <small id="zoneName">低语森林</small>
+          <h1><span id="floorName">第 1 层</span><em id="floorTag">6×6 自动探索</em></h1>
+        </div>
+        <div class="floor-stats">
+          <span><b id="exploredCount">1</b>/36 已探索</span>
+          <span><b id="bossCount">0</b>/<b id="bossTotal">1</b> Boss</span>
+        </div>
+      </section>
+
+      <section class="stage panel">
+        <div class="grid-wrap">
+          <div id="grid" class="grid" role="grid" aria-label="6×6 自动探索地图"></div>
+          <div id="floatingText" class="floating-text"></div>
+        </div>
+        <div class="stage-footer">
+          <div class="intent">
+            <small>当前行动</small>
+            <strong id="intentText">正在观察周围迷雾…</strong>
+          </div>
+          <div class="speed">
+            <button class="chip active" data-speed="1">1×</button>
+            <button class="chip" data-speed="2">2×</button>
+            <button class="chip" data-speed="4">4×</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="combatCard" class="combat panel hidden">
+        <div class="combat-title">
+          <div>
+            <small id="enemyKind">普通遭遇</small>
+            <strong id="enemyName">森林狼</strong>
+          </div>
+          <span id="enemyBadge" class="enemy-badge">怪物</span>
+        </div>
+        <div class="bar enemy"><i id="enemyHpFill"></i><span id="enemyHpText"></span></div>
+        <div class="combat-row">
+          <span id="combatHint">自动战斗中</span>
+          <b id="dpsText">0 DPS</b>
+        </div>
+      </section>
+
+      <section class="progress panel">
+        <div class="progress-item">
+          <div class="label"><span>出口状态</span><b id="exitState">未发现</b></div>
+          <div class="thin"><i id="exitProgress"></i></div>
+        </div>
+        <div class="progress-item">
+          <div class="label"><span>区域 Boss</span><b id="regionBossState">第 10 层</b></div>
+          <div class="thin danger"><i id="regionProgress"></i></div>
+        </div>
+      </section>
+
+      <section class="equipment panel">
+        <div class="section-title">
+          <div><small>自动换装</small><h2>当前装备</h2></div>
+          <label class="switch"><input id="autoEquip" type="checkbox" checked><span></span></label>
+        </div>
+        <div id="equipmentSlots" class="equipment-slots"></div>
+      </section>
+
+      <section class="loot panel">
+        <div class="section-title">
+          <div><small>最近掉落</small><h2>战利品</h2></div>
+          <span id="bagCount" class="muted">0 件</span>
+        </div>
+        <div id="lootFeed" class="loot-feed"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-actions">
+      <button id="pauseBtn" class="primary">暂停探索</button>
+      <button id="strategyBtn">策略：均衡</button>
+      <button id="resetBtn">重置本层</button>
+    </nav>
+  </div>
+
+  <div id="toastRoot" class="toast-root"></div>
+  <script src="game.js"></script>
+</body>
+</html>
