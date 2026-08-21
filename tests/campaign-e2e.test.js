@@ -60,7 +60,6 @@ function makeContext(storageMap=new Map(),nowValue=1_800_000_000_000){
   let seed=0x12345678;
   const math=Object.create(Math);
   math.random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/0x100000000;};
-  let perf=0;
   class FakeDate extends Date{static now(){return nowValue;}}
 
   const context={
@@ -69,7 +68,7 @@ function makeContext(storageMap=new Map(),nowValue=1_800_000_000_000){
     localStorage:storage,
     Math:math,
     Date:FakeDate,
-    performance:{now:()=>perf},
+    performance:{now:()=>0},
     requestAnimationFrame:()=>0,
     setInterval:()=>0,
     clearInterval:()=>{},
@@ -115,10 +114,11 @@ function makeContext(storageMap=new Map(),nowValue=1_800_000_000_000){
           if(state.meta.completed) return {steps:i,zones:[...zones]};
           if(targetFloor&&state.floor>=targetFloor&&!state.combat) return {steps:i,zones:[...zones]};
           zones.add(state.zoneIndex);
+          if(i%4===0) window.CampaignStability.watchdog();
           if(state.combat){ now+=1200; combatTick(now); }
           else { moveOne(); now+=700; }
         }
-        return {steps:maxSteps,zones:[...zones],timedOut:true};
+        return {steps:maxSteps,zones:[...zones],timedOut:true,floor:state.floor,zoneIndex:state.zoneIndex,completed:!!state.meta.completed};
       },
       settleCombat(){
         let now=1000,guard=200;
@@ -141,7 +141,7 @@ function signature(s){return JSON.stringify({floor:s.floor,zoneIndex:s.zoneIndex
   env.context.__campaignTest.powerUp();
   const result=env.context.__campaignTest.simulate(30000,0);
   const s=inspect(env);
-  assert.strictEqual(result.timedOut,undefined,'campaign simulation timed out');
+  assert.strictEqual(result.timedOut,undefined,`campaign simulation timed out at floor ${result.floor}, zone ${result.zoneIndex}`);
   assert.strictEqual(s.completed,true,'final boss path did not trigger completion');
   assert.strictEqual(s.floor,80,'completion must happen on floor 80');
   assert.strictEqual(s.zoneIndex,7,'completion must happen in zone 8');
