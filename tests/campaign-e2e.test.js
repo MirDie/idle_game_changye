@@ -174,7 +174,7 @@ function signature(s){return JSON.stringify({floor:s.floor,zoneIndex:s.zoneIndex
   console.log('✓ save/load restores the exact active floor and exploration state');
 })();
 
-(function offlineSettlementIsCappedAndNotDuplicated(){
+(function offlineSettlementIsExactAndNotDuplicated(){
   const storage=new Map();
   const first=makeContext(storage);
   first.context.__campaignTest.powerUp();
@@ -194,16 +194,17 @@ function signature(s){return JSON.stringify({floor:s.floor,zoneIndex:s.zoneIndex
     storage.set(legacyKey,JSON.stringify(legacy));
   }
 
+  const expectedGold=Math.floor(3600*(.22+before.floor*.055));
   const second=makeContext(storage,first.getNow());
   const after=inspect(second);
-  assert.ok(after.gold>before.gold,'offline gold was not granted');
+  assert.strictEqual(after.gold,before.gold+expectedGold,'offline gold was settled more or less than exactly once');
   assert.ok(after.level>=before.level,'offline XP regressed level');
   const onceGold=after.gold;
 
   const third=makeContext(storage,first.getNow()+1000);
   const afterImmediateReload=inspect(third);
   assert.strictEqual(afterImmediateReload.gold,onceGold,'offline reward was duplicated on immediate reload');
-  console.log('✓ offline settlement applies once and survives immediate reload');
+  console.log('✓ offline settlement is exact, single, and survives immediate reload');
 })();
 
 (function requiredBossFailureCannotHardLockFloor(){
