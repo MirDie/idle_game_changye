@@ -49,7 +49,6 @@ function repairFloorState(){
   state.meta.achievements=state.meta.achievements||{};
   state.meta.resolveStacks=Math.max(0,Math.min(8,Number(state.meta.resolveStacks)||0));
   state.meta.campaignVersion=VERSION;
-  state.combat=null;
 
   if(!Array.isArray(state.map)||state.map.length!==FLOOR_TILES) return false;
   if(!Number.isInteger(state.playerIndex)||state.playerIndex<0||state.playerIndex>=FLOOR_TILES) state.playerIndex=0;
