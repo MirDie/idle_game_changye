@@ -1,6 +1,9 @@
 (function(){
 'use strict';
 
+let lastProgressKey='';
+let stagnantTicks=0;
+
 function isCoreBoss(tile){
   return !!tile&&['floorBoss','regionBoss'].includes(tile.type);
 }
@@ -80,9 +83,105 @@ function enforce(save=true){
   return changed;
 }
 
+function progressKey(){
+  return [
+    state.floor,state.zoneIndex,state.playerIndex,
+    state.explored?.size||0,state.cleared?.size||0,
+    state.floorBossDefeated?1:0,state.meta.guardDefeated?1:0,
+    state.combat?1:0,state.meta.transitioning?1:0
+  ].join('|');
+}
+
+function diagnostic(){
+  const current=state.map?.[state.playerIndex];
+  const guard=state.map?.find(t=>t&&(t.type==='bossGuard'||t.guard)&&!t.cleared);
+  const core=state.map?.find(t=>isCoreBoss(t)&&!t.cleared);
+  const exit=state.map?.find(t=>t&&t.type==='exit');
+  const pending=(state.map||[]).filter(t=>t&&!t.cleared&&!t.visited).map(t=>`${t.index}:${t.type}`);
+  return {
+    floor:state.floor,zoneIndex:state.zoneIndex,running:state.running,transitioning:!!state.meta.transitioning,
+    playerIndex:state.playerIndex,current:current&&{index:current.index,type:current.type,visited:!!current.visited,cleared:!!current.cleared},
+    guardDefeated:!!state.meta.guardDefeated,guard:guard&&{index:guard.index,type:guard.type,visited:!!guard.visited,cleared:!!guard.cleared},
+    floorBossDefeated:!!state.floorBossDefeated,core:core&&{index:core.index,type:core.type,visited:!!core.visited,cleared:!!core.cleared},
+    exit:exit&&{index:exit.index,visited:!!exit.visited,cleared:!!exit.cleared,locked:!!exit.locked},pending
+  };
+}
+
+function recoverStall(){
+  if(!state.running||state.combat||!Array.isArray(state.map)) return false;
+  let changed=false;
+
+  if(state.meta.transitioning){
+    state.meta.transitioning=false;
+    changed=true;
+  }
+
+  if(state.floorBossDefeated){
+    const exit=state.map.find(t=>t&&t.type==='exit');
+    if(exit) exit.locked=false;
+    state.meta.transitioning=false;
+    enterExit();
+    return true;
+  }
+
+  if(!state.meta.guardDefeated){
+    ensureRequiredGuard();
+    const guard=state.map.find(t=>t&&(t.type==='bossGuard'||t.guard)&&!t.cleared);
+    if(guard){
+      guard.visited=false;
+      guard.cleared=false;
+      state.cleared.delete(guard.index);
+      if(state.playerIndex===guard.index){
+        guard.visited=true;
+        resolveTile(guard);
+      }
+      changed=true;
+    }
+  }else{
+    const core=state.map.find(t=>isCoreBoss(t)&&!t.cleared);
+    if(core){
+      core.visited=false;
+      core.cleared=false;
+      state.cleared.delete(core.index);
+      if(state.playerIndex===core.index){
+        core.visited=true;
+        resolveTile(core);
+      }
+      changed=true;
+    }
+  }
+
+  if(changed){
+    renderAll();
+    window.GridIdleMeta?.saveGame?.('stall-recovery');
+  }
+  return changed;
+}
+
+function observeProgress(){
+  if(!state.running||state.combat){
+    stagnantTicks=0;
+    lastProgressKey=progressKey();
+    return;
+  }
+  const key=progressKey();
+  if(key===lastProgressKey) stagnantTicks++;
+  else { lastProgressKey=key; stagnantTicks=0; }
+
+  if(stagnantTicks===12){
+    console.warn('campaign stall detected',JSON.stringify(diagnostic()));
+    recoverStall();
+  }else if(stagnantTicks>0&&stagnantTicks%24===0){
+    console.warn('campaign stall persists',JSON.stringify(diagnostic()));
+    recoverStall();
+  }
+}
+
 const priorGenerateFloor=generateFloor;
 generateFloor=function(){
   priorGenerateFloor();
+  stagnantTicks=0;
+  lastProgressKey='';
   enforce(true);
 };
 
@@ -91,9 +190,8 @@ moveOne=function(){
   if(!state.combat&&state.running&&Array.isArray(state.map)){
     const current=state.map[state.playerIndex];
     if(current&&!current.cleared&&!current.visited){
-      const coreReady=isCoreBoss(current)&&state.meta.guardDefeated;
-      const guardReady=current.type==='bossGuard'||current.guard;
-      if(coreReady||guardReady){
+      const lockedCore=isCoreBoss(current)&&!state.meta.guardDefeated;
+      if(!lockedCore){
         current.visited=true;
         state.explored.add(current.index);
         revealAround(current.index);
@@ -112,16 +210,22 @@ if(window.CampaignStability){
     enforce(false);
     if(typeof priorWatchdog==='function') priorWatchdog();
     enforce(false);
+    observeProgress();
   };
 }
 
 // Repair the already-restored/generated floor on boot, including old saves
 // created before the mandatory guard invariant existed.
 enforce(true);
-setInterval(()=>enforce(false),2000);
+setInterval(()=>{
+  enforce(false);
+  observeProgress();
+},2000);
 
 window.CampaignInvariants={
   enforce,
+  recoverStall,
+  diagnostic,
   ensureRequiredGuard,
   ensureCoreBossReachable,
   ensureExitConsistency
