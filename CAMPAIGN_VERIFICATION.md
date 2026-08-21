@@ -1,52 +1,16 @@
 # Campaign Stability Verification
 
-- Result: **failure**
-- Verified commit: `4c22a4890bc13d66ebec32afe1db6feabde6d3b3`
+- Result: **success**
+- Verified commit: `3e8ddf90a3b157ee60a1ee1b0255538d60fa900c`
 - Checks: syntax, 8-zone/80-floor final boss simulation, exact mid-floor save/load, offline single settlement, required-boss retry safety.
 
 ## Test output
 
 ```text
-node:assert:150
-  throw new AssertionError(obj);
-  ^
-
-AssertionError [ERR_ASSERTION]: not all eight zones were reached
-
-[
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7
-]
-
-    at campaignCompletesAllEightZones (/home/runner/work/idle_game_changye/idle_game_changye/tests/campaign-e2e.test.js:149:10)
-    at Object.<anonymous> (/home/runner/work/idle_game_changye/idle_game_changye/tests/campaign-e2e.test.js:152:3)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49 {
-  generatedMessage: false,
-  code: 'ERR_ASSERTION',
-  actual: [
-    0, 1, 2, 3,
-    4, 5, 6, 7
-  ],
-  expected: [
-    0, 1, 2, 3,
-    4, 5, 6, 7
-  ],
-  operator: 'deepStrictEqual',
-  diff: 'simple'
-}
-
-Node.js v22.23.2
+✓ new game can progress through all 8 zones and final boss
+✓ save/load restores the exact active floor and exploration state
+✓ offline settlement applies once and survives immediate reload
+✓ required boss defeat retries instead of hard-locking the floor
+All campaign stability tests passed.
 
 ```
