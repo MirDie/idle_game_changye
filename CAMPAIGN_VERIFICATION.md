@@ -1,7 +1,7 @@
 # Campaign Stability Verification
 
 - Result: **failure**
-- Verified commit: `f6b068de90244ec0c74db8511dbc27d1d19bc21c`
+- Verified commit: `94c91ea30d7dc83f18890efeacfb333e3de69dc0`
 - Checks: syntax, 8-zone/80-floor final boss simulation, exact mid-floor save/load, offline single settlement, required-boss retry safety.
 
 ## Test output
@@ -11,7 +11,7 @@ node:assert:150
   throw new AssertionError(obj);
   ^
 
-AssertionError [ERR_ASSERTION]: campaign simulation timed out
+AssertionError [ERR_ASSERTION]: campaign simulation timed out at floor 4, zone 0
 + actual - expected
 
 + true
