@@ -16,7 +16,8 @@ const SCRIPTS=[
   'advanced-gameplay.js',
   'hotfixes.js',
   'campaign-stability.js',
-  'campaign-invariants.js'
+  'campaign-invariants.js',
+  'campaign-balance.js'
 ];
 
 class FakeClassList{
