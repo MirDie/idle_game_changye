@@ -1,16 +1,39 @@
 # Campaign Stability Verification
 
-- Result: **success**
-- Verified commit: `26cb82da59e58a611fef943bd4e53e383c546f53`
+- Result: **failure**
+- Verified commit: `258c0e0e348506a31333bd75454eba362a192b6e`
 - Checks: syntax, 8-zone/80-floor final boss simulation, exact mid-floor save/load, offline single settlement, required-boss retry safety.
 
 ## Test output
 
 ```text
-✓ new game can progress through all 8 zones and final boss
-✓ save/load restores the exact active floor and exploration state
-✓ offline settlement is exact, single, and survives immediate reload
-✓ required boss defeat retries instead of hard-locking the floor
-All campaign stability tests passed.
+node:assert:150
+  throw new AssertionError(obj);
+  ^
+
+AssertionError [ERR_ASSERTION]: natural campaign timed out at floor 1, zone 0
++ actual - expected
+
++ true
+- undefined
+
+    at campaignCompletesAllEightZonesFromNaturalNewGame (/home/runner/work/idle_game_changye/idle_game_changye/tests/campaign-e2e.test.js:144:10)
+    at Object.<anonymous> (/home/runner/work/idle_game_changye/idle_game_changye/tests/campaign-e2e.test.js:151:3)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: true,
+  expected: undefined,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.2
 
 ```
