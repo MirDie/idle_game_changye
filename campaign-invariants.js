@@ -43,11 +43,15 @@ function ensureRequiredGuard(){
   return true;
 }
 
+function liveGuard(){
+  return state.map?.find(t=>t&&(t.type==='bossGuard'||t.guard)&&!t.cleared)||null;
+}
+
 function ensureCoreBossReachable(){
   if(!Array.isArray(state.map)||state.floorBossDefeated) return false;
   const core=state.map.find(t=>isCoreBoss(t)&&!t.cleared);
   if(!core) return false;
-  const guard=state.map.find(t=>t&&(t.type==='bossGuard'||t.guard)&&!t.cleared);
+  const guard=liveGuard();
   if(guard&&!state.meta.guardDefeated) return false;
 
   const hasFrontier=state.map.some(t=>t&&!t.visited&&!t.cleared&&t.index!==core.index);
@@ -74,6 +78,7 @@ function ensureExitConsistency(){
 function enforce(save=true){
   let changed=false;
   changed=ensureRequiredGuard()||changed;
+  if(state.meta.guardDefeated||!liveGuard()) state.meta.seekingGuard=false;
   changed=ensureCoreBossReachable()||changed;
   changed=ensureExitConsistency()||changed;
   if(changed){
@@ -88,18 +93,19 @@ function progressKey(){
     state.floor,state.zoneIndex,state.playerIndex,
     state.explored?.size||0,state.cleared?.size||0,
     state.floorBossDefeated?1:0,state.meta.guardDefeated?1:0,
-    state.combat?1:0,state.meta.transitioning?1:0
+    state.meta.seekingGuard?1:0,state.combat?1:0,state.meta.transitioning?1:0
   ].join('|');
 }
 
 function diagnostic(){
   const current=state.map?.[state.playerIndex];
-  const guard=state.map?.find(t=>t&&(t.type==='bossGuard'||t.guard)&&!t.cleared);
+  const guard=liveGuard();
   const core=state.map?.find(t=>isCoreBoss(t)&&!t.cleared);
   const exit=state.map?.find(t=>t&&t.type==='exit');
   const pending=(state.map||[]).filter(t=>t&&!t.cleared&&!t.visited).map(t=>`${t.index}:${t.type}`);
   return {
     floor:state.floor,zoneIndex:state.zoneIndex,running:state.running,transitioning:!!state.meta.transitioning,
+    seekingGuard:!!state.meta.seekingGuard,
     playerIndex:state.playerIndex,current:current&&{index:current.index,type:current.type,visited:!!current.visited,cleared:!!current.cleared},
     guardDefeated:!!state.meta.guardDefeated,guard:guard&&{index:guard.index,type:guard.type,visited:!!guard.visited,cleared:!!guard.cleared},
     floorBossDefeated:!!state.floorBossDefeated,core:core&&{index:core.index,type:core.type,visited:!!core.visited,cleared:!!core.cleared},
@@ -150,8 +156,9 @@ function recoverStall(){
 
   if(!state.meta.guardDefeated){
     ensureRequiredGuard();
-    const guard=state.map.find(t=>t&&(t.type==='bossGuard'||t.guard)&&!t.cleared);
+    const guard=liveGuard();
     if(guard){
+      state.meta.seekingGuard=true;
       guard.visited=false;
       guard.cleared=false;
       state.cleared.delete(guard.index);
@@ -162,6 +169,7 @@ function recoverStall(){
       changed=true;
     }
   }else{
+    state.meta.seekingGuard=false;
     const core=state.map.find(t=>isCoreBoss(t)&&!t.cleared);
     if(core){
       core.visited=false;
@@ -204,6 +212,7 @@ function observeProgress(){
 const priorGenerateFloor=generateFloor;
 generateFloor=function(){
   priorGenerateFloor();
+  state.meta.seekingGuard=false;
   stagnantTicks=0;
   lastProgressKey='';
   enforce(true);
@@ -212,16 +221,33 @@ generateFloor=function(){
 const priorMoveOne=moveOne;
 moveOne=function(){
   if(!state.combat&&state.running&&Array.isArray(state.map)){
+    if(state.meta.guardDefeated) state.meta.seekingGuard=false;
+    let guard=liveGuard();
     const current=state.map[state.playerIndex];
+
+    if(current&&!current.cleared&&!current.visited&&isCoreBoss(current)&&!state.meta.guardDefeated){
+      ensureRequiredGuard();
+      guard=liveGuard();
+      state.meta.seekingGuard=!!guard;
+    }
+
+    if(state.meta.seekingGuard&&guard&&!state.meta.guardDefeated){
+      if(state.playerIndex===guard.index){
+        if(!guard.visited){
+          guard.visited=true;
+          state.explored.add(guard.index);
+          revealAround(guard.index);
+        }
+        resolveTile(guard);
+        renderAll();
+        return;
+      }
+      return moveInto(stepToward(state.playerIndex,guard.index));
+    }
+
     if(current&&!current.cleared&&!current.visited){
       const lockedCore=isCoreBoss(current)&&!state.meta.guardDefeated;
-      if(lockedCore){
-        ensureRequiredGuard();
-        const guard=state.map.find(t=>t&&(t.type==='bossGuard'||t.guard)&&!t.cleared);
-        if(guard&&guard.index!==state.playerIndex){
-          return moveInto(stepToward(state.playerIndex,guard.index));
-        }
-      }else{
+      if(!lockedCore){
         current.visited=true;
         state.explored.add(current.index);
         revealAround(current.index);
@@ -232,6 +258,16 @@ moveOne=function(){
     }
   }
   return priorMoveOne();
+};
+
+const priorFinishCombat=finishCombat;
+finishCombat=function(win){
+  const wasGuard=!!(state.combat?.enemy?.guard||state.map?.[state.combat?.tileIndex]?.guard);
+  priorFinishCombat(win);
+  if(win&&wasGuard){
+    state.meta.seekingGuard=false;
+    window.GridIdleMeta?.saveGame?.('guard-cleared');
+  }
 };
 
 const priorWatchdog=window.CampaignStability?.watchdog;
