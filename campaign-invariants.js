@@ -86,6 +86,26 @@ generateFloor=function(){
   enforce(true);
 };
 
+const priorMoveOne=moveOne;
+moveOne=function(){
+  if(!state.combat&&state.running&&Array.isArray(state.map)){
+    const current=state.map[state.playerIndex];
+    if(current&&!current.cleared&&!current.visited){
+      const coreReady=isCoreBoss(current)&&state.meta.guardDefeated;
+      const guardReady=current.type==='bossGuard'||current.guard;
+      if(coreReady||guardReady){
+        current.visited=true;
+        state.explored.add(current.index);
+        revealAround(current.index);
+        resolveTile(current);
+        renderAll();
+        return;
+      }
+    }
+  }
+  return priorMoveOne();
+};
+
 const priorWatchdog=window.CampaignStability?.watchdog;
 if(window.CampaignStability){
   window.CampaignStability.watchdog=function(){
