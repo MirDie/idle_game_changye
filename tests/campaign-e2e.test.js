@@ -146,7 +146,7 @@ function signature(s){return JSON.stringify({floor:s.floor,zoneIndex:s.zoneIndex
   assert.strictEqual(s.completed,true,'final boss path did not trigger completion');
   assert.strictEqual(s.floor,80,'completion must happen on floor 80');
   assert.strictEqual(s.zoneIndex,7,'completion must happen in zone 8');
-  assert.deepStrictEqual(result.zones.sort((a,b)=>a-b),[0,1,2,3,4,5,6,7],'not all eight zones were reached');
+  assert.strictEqual(Array.from(result.zones).sort((a,b)=>a-b).join(','),'0,1,2,3,4,5,6,7','not all eight zones were reached');
   assert.ok(s.bosses>=80,'expected at least one required boss per floor');
   console.log('✓ new game can progress through all 8 zones and final boss');
 })();
