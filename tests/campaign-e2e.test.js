@@ -15,7 +15,8 @@ const SCRIPTS=[
   'full-systems.js',
   'advanced-gameplay.js',
   'hotfixes.js',
-  'campaign-stability.js'
+  'campaign-stability.js',
+  'campaign-invariants.js'
 ];
 
 class FakeClassList{
@@ -209,6 +210,7 @@ function signature(s){return JSON.stringify({floor:s.floor,zoneIndex:s.zoneIndex
   const env=makeContext();
   env.context.__campaignTest.powerUp();
   vm.runInContext(`
+    state.meta.guardDefeated=true;
     const core=state.map.find(t=>['floorBoss','regionBoss'].includes(t.type));
     if(!core) throw new Error('missing core boss');
     state.playerIndex=core.index;
