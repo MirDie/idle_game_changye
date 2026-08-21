@@ -3,6 +3,7 @@
 
 const SAVE_KEY='grid_idle_save_v2';
 const BACKUP_KEY='grid_idle_save_v2_backup';
+const AUTHORITATIVE_SAVE_KEY='grid_idle_save_v3';
 const MAX_OFFLINE_SECONDS=8*60*60;
 
 state.meta=state.meta||{
@@ -64,6 +65,12 @@ function loadSaveObject(raw){
 }
 
 function loadGame(){
+  // V3 preserves the exact active floor and owns offline settlement. Once it
+  // exists, V2 is migration/compatibility data only and must not award again.
+  try{
+    if(localStorage.getItem(AUTHORITATIVE_SAVE_KEY)) return false;
+  }catch(_){ }
+
   let data=null;
   try{ const raw=localStorage.getItem(SAVE_KEY); if(raw) data=loadSaveObject(raw); }
   catch(e){
