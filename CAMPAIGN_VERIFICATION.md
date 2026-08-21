@@ -1,7 +1,7 @@
 # Campaign Stability Verification
 
 - Result: **failure**
-- Verified commit: `258c0e0e348506a31333bd75454eba362a192b6e`
+- Verified commit: `60a1c478a80b7f7ab39d92984a5aee74e79a8678`
 - Checks: syntax, 8-zone/80-floor final boss simulation, exact mid-floor save/load, offline single settlement, required-boss retry safety.
 
 ## Test output
